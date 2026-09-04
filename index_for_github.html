@@ -83,14 +83,12 @@ button:active{transform: translateY(0);}
 .search{width:100%;padding:12px;border:2px solid var(--border);border-radius:8px;font-size:15px;margin-bottom:20px; font-family: inherit;}
 .search:focus { outline:none; border-color: var(--pink); }
 
-/* --- Side Watermark (Inside Sidebar Flow) --- */
 .side-watermark {
   margin-top: 20px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08);
   color: #a0aec0; text-align: center; font-size: 11px; font-weight: 600;
 }
 .side-watermark span { color: var(--pink); font-weight: bold; }
 
-/* --- 80mm Receipt Strict Styles --- */
 .receipt-container {
     background: #fdfdfd; display: flex; justify-content: center;
 }
@@ -130,7 +128,6 @@ button:active{transform: translateY(0);}
 }
 .modal-content { background: #fff; padding: 25px; border-radius: 12px; width: 100%; max-width: 350px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
 
-/* --- Mobile Responsiveness --- */
 @media(max-width: 850px){
   .app { flex-direction: column; }
   .side {
@@ -158,7 +155,6 @@ button:active{transform: translateY(0);}
   .stats { grid-template-columns: 1fr; gap: 10px; }
 }
 
-/* --- PRINT MEDIA QUERIES --- */
 @page { margin: 0; }
 @media print{
   html, body {
@@ -260,7 +256,6 @@ button:active{transform: translateY(0);}
         <button style="color:#e74c3c" onclick="logout()"><span>🚪 تسجيل خروج</span></button>
       </div>
     </div>
-    <!-- Sidebar Watermark (Only place inside app) -->
     <div class="side-watermark">
       تم التطوير بواسطة: <span>OE Vision</span>
     </div>
@@ -415,7 +410,7 @@ button:active{transform: translateY(0);}
       <div class="stats">
         <div class="stat"><span>عدد الأوردرات</span><b id="sOrders">0</b></div>
         <div class="stat"><span>الكميات الكلية</span><b id="sQty">0</b></div>
-        <div class="stat"><span>الحالة</span><b style="color:var(--pink); font-size:20px;">نشط</b></div>
+        <div class="stat"><span>الحالة السحابية</span><b style="color:var(--pink); font-size:20px;">متصل مباشر</b></div>
       </div>
     </div>
 
@@ -445,12 +440,10 @@ button:active{transform: translateY(0);}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* ============================================================
-   إعدادات الاتصال بـ Supabase
-   حط هنا الـ Project URL و anon public key بتوع مشروعك
-   (هتلاقيهم في Supabase: Project Settings > API)
+   إعدادات الاتصال المباشر بـ Supabase
    ============================================================ */
-const SUPABASE_URL = "PASTE_YOUR_SUPABASE_PROJECT_URL_HERE";
-const SUPABASE_ANON_KEY = "PASTE_YOUR_SUPABASE_ANON_KEY_HERE";
+const SUPABASE_URL = 'https://bmvhnhaeqllpofcpxjcj.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_B1GNr7YbqXRj5JF2acFUBw_IBzpbdNE';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 function toDbOrderRow(o) {
@@ -541,27 +534,15 @@ async function loadAllData() {
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
+    // امسح أي بقايا قديمة في التصفح نهائياً تماماً بناءً على طلبك
+    sessionStorage.clear();
+    localStorage.clear();
+
     await loadAllData();
-    let savedUserJson = sessionStorage.getItem("oms_current_user_v32");
-    if (savedUserJson) {
-        currentUser = JSON.parse(savedUserJson);
-        document.getElementById("login-screen").style.display = 'none';
-        document.getElementById("main-app").style.display = 'flex';
-        document.getElementById("displayUserName").textContent = currentUser.name;
-        document.getElementById("displayUserRole").textContent = currentUser.role === 'manager' ? "(مدير النظام)" : "(كاشير)";
-        
-        let managerElements = document.querySelectorAll(".manager-only");
-        managerElements.forEach(el => el.style.display = (currentUser.role === 'manager') ? 'block' : 'none');
-        
-        initNewOrderFields();
-        renderFreshReceipt();
-        switchTab('tab-new');
-    } else {
-        let loading = document.getElementById("loginLoading");
-        let formWrap = document.getElementById("loginFormWrap");
-        if (loading) loading.style.display = 'none';
-        if (formWrap) formWrap.style.display = 'block';
-    }
+    let loading = document.getElementById("loginLoading");
+    let formWrap = document.getElementById("loginFormWrap");
+    if (loading) loading.style.display = 'none';
+    if (formWrap) formWrap.style.display = 'block';
 });
 
 function attemptLogin() {
@@ -572,7 +553,6 @@ function attemptLogin() {
   let user = users.find(u => u.code === code && u.password === pwd);
   if(user) {
     currentUser = user;
-    sessionStorage.setItem("oms_current_user_v32", JSON.stringify(user));
     
     errorMsg.style.display = 'none';
     document.getElementById("login-screen").style.display = 'none';
@@ -596,7 +576,8 @@ function attemptLogin() {
 
 function logout() {
   currentUser = null;
-  sessionStorage.removeItem("oms_current_user_v32");
+  sessionStorage.clear();
+  localStorage.clear();
   document.getElementById("main-app").style.display = 'none';
   document.getElementById("login-screen").style.display = 'flex';
 }
@@ -666,11 +647,11 @@ async function deleteUser(index) {
   }
 }
 
+/* ترقيمنه ليبدأ من 101 و الشباك من 1 بناءً على أحدث سِجل سحابي */
 function getNextId() {
-  if (!currentUser) return 100;
-  let maxId = 99;
-  [...orders, ...suspendedOrders].forEach(o => {
-    if (o.cashierCode === currentUser.code && Number(o.id) > maxId) maxId = Number(o.id);
+  let maxId = 100;
+  orders.forEach(o => {
+    if (Number(o.id) > maxId) maxId = Number(o.id);
   });
   return maxId + 1;
 }
@@ -684,7 +665,11 @@ function esc(s) {
   return String(s ?? "").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
 }
 
-function switchTab(tabId) {
+async function switchTab(tabId) {
+  // إعادة تحديث البيانات سحابياً عند كل تنقل لضمان رؤية أحدث أوردرات زملائك بشكل لحظي
+  await loadOrders();
+  await loadSuspendedOrders();
+
   document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
   document.querySelectorAll('.nav button').forEach(el => el.classList.remove('active'));
   let targetTab = document.getElementById(tabId);
@@ -703,7 +688,7 @@ function switchTab(tabId) {
 function initNewOrderFields() {
     let nextNum = getNextId();
     document.getElementById("orderId").value = nextNum;
-    let windowCalc = ((nextNum - 100) % 10) + 1; 
+    let windowCalc = ((nextNum - 101) % 10) + 1; 
     document.getElementById("windowNum").value = windowCalc;
     document.getElementById("orderDate").value = now();
     renderReceipt();
@@ -809,7 +794,7 @@ function renderReceipt() {
       <tbody>${rows || '<tr><td colspan="4" style="text-align:center">لم تتم إضافة أصناف</td></tr>'}</tbody>
     </table>
     ${notes ? `<div style="margin-top:8px;border:1px dashed #000;padding:6px;font-size:12px;"><b>ملاحظات:</b> ${esc(notes)}</div>` : ''}
-    <div class="rmeta">
+    <div style="display:flex; justify-content:space-between; font-size:10px; margin-top:10px; border-top:1px dashed #000; padding-top:4px;">
       <span>الكاشير: ${esc(currentUser ? currentUser.name : 'Admin')}</span>
       <span>الوقت: ${esc(new Date().toLocaleTimeString("ar-EG",{hour:"2-digit",minute:"2-digit"}))}</span>
     </div>
@@ -894,9 +879,7 @@ function renderFreshReceipt() {
 function printFreshTicket() {
   if(freshItems.length === 0) { alert("أضف منتجات فريش أولاً للطباعة!"); return; }
   renderFreshReceipt();
-  setTimeout(() => {
-      window.print();
-  }, 300);
+  setTimeout(() => { window.print(); }, 300);
 }
 
 function collectData() {
@@ -927,7 +910,7 @@ async function performSave() {
     let { error } = await sb.from('orders').insert(toDbOrderRow(o));
     if (error) throw error;
     if(editingSuspendedId) {
-      await sb.from('suspended_orders').delete().eq('id', editingSuspendedId).eq('cashier_code', currentUser.code);
+      await sb.from('suspended_orders').delete().eq('id', editingSuspendedId);
       suspendedOrders = suspendedOrders.filter(x => x.id !== editingSuspendedId);
       editingSuspendedId = null;
     }
@@ -958,7 +941,7 @@ async function suspendOrder() {
   let o = collectData();
   try {
     if(editingSuspendedId) {
-      await sb.from('suspended_orders').delete().eq('id', editingSuspendedId).eq('cashier_code', currentUser.code);
+      await sb.from('suspended_orders').delete().eq('id', editingSuspendedId);
       suspendedOrders = suspendedOrders.filter(x => x.id !== editingSuspendedId);
     }
     let { error } = await sb.from('suspended_orders').insert(toDbOrderRow(o));
@@ -968,7 +951,7 @@ async function suspendOrder() {
     alert("حصل خطأ أثناء تعليق الأوردر: " + e.message);
     return;
   }
-  alert("تم تعليق الأوردر!");
+  alert("تم تعليق الأوردر بنجاح!");
   clearOrder(); 
 }
 
@@ -982,7 +965,7 @@ function renderSuspended() {
   let b = document.getElementById("suspendedBody");
   if(list.length === 0) { b.innerHTML = `<tr><td colspan="5">لا توجد أوردرات معلقة.</td></tr>`; return; }
   b.innerHTML = list.map((o) => {
-    let rawIndex = suspendedOrders.findIndex(x => x.id === o.id && x.cashierCode === o.cashierCode);
+    let rawIndex = suspendedOrders.findIndex(x => x.id === o.id);
     return `<tr>
       <td>${esc(o.date)}</td>
       <td><b>${esc(o.customer)}</b></td>
@@ -1014,9 +997,9 @@ async function deleteSuspended(index) {
   if(confirm("حذف الأوردر المعلق؟")) {
     let list = getFilteredList(suspendedOrders);
     let o = list[index];
-    let realIndex = suspendedOrders.findIndex(x => x.id === o.id && x.cashierCode === o.cashierCode);
+    let realIndex = suspendedOrders.findIndex(x => x.id === o.id);
     try {
-      let { error } = await sb.from('suspended_orders').delete().eq('id', o.id).eq('cashier_code', o.cashierCode);
+      let { error } = await sb.from('suspended_orders').delete().eq('id', o.id);
       if (error) throw error;
       if(realIndex > -1) { suspendedOrders.splice(realIndex, 1); renderSuspended(); }
     } catch (e) {
@@ -1025,7 +1008,8 @@ async function deleteSuspended(index) {
   }
 }
 
-function renderHistory() {
+async function renderHistory() {
+  await loadOrders(); // تحديث فوري للأرشيف من السحاب
   let q = (document.getElementById("historySearch").value || "").trim().toLowerCase();
   let list = getFilteredList(orders).filter(o => {
       let str = [String(o.id), String(o.windowNum), String(o.customer), String(o.phone), String(o.cashierName)].join(" ").toLowerCase();
@@ -1060,7 +1044,8 @@ function loadOrderToPrint(id, cashierCode) {
   switchTab('tab-new'); renderItems(); renderReceipt();
 }
 
-function renderCancelList() {
+async function renderCancelList() {
+  await loadOrders();
   let q = (document.getElementById("cancelSearch").value || "").trim().toLowerCase();
   let list = getFilteredList(orders).filter(o => {
       let str = [String(o.id), String(o.customer), String(o.cashierName)].join(" ").toLowerCase();
@@ -1103,7 +1088,8 @@ function getOrderISODate(o) {
   return "";
 }
 
-function filterReports() {
+async function filterReports() {
+  await loadOrders();
   let dFrom = document.getElementById("dateFrom").value;
   let dTo = document.getElementById("dateTo").value;
   let baseList = getFilteredList(orders);
@@ -1124,12 +1110,12 @@ function updateStatsUI() {
   document.getElementById("sQty").textContent = tQ;
 }
 
-function updateStats() {
+async function updateStats() {
   if (!document.getElementById("dateFrom").value) {
      let today = new Date().toISOString().split("T")[0];
      document.getElementById("dateFrom").value = today; document.getElementById("dateTo").value = today;
   }
-  filterReports();
+  await filterReports();
 }
 
 function exportToExcel() {
