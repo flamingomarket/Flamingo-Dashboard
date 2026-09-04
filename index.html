@@ -457,7 +457,6 @@ function toDbOrderRow(o) {
     address: o.address,
     notes: o.notes,
     order_date: o.date,
-    iso_date: o.isoDate,
     items: o.items,
     cashier_name: o.cashierName
   };
@@ -473,7 +472,6 @@ function fromDbOrderRow(r) {
     address: r.address,
     notes: r.notes,
     date: r.order_date,
-    isoDate: r.iso_date,
     items: r.items || [],
     cashierCode: r.cashier_code,
     cashierName: r.cashier_name
@@ -509,22 +507,22 @@ async function loadUsers() {
 
 async function loadOrders() {
   try {
-    let { data, error } = await sb.from('orders').select('*').order('iso_date', { ascending: false });
+    let { data, error } = await sb.from('orders').select('*');
     if (error) throw error;
     orders = (data || []).map(fromDbOrderRow);
   } catch (e) {
-    alert("تعذر تحميل الأوردرات من قاعدة البيانات: " + e.message);
+    console.error("خطأ تحميل الأوردرات: ", e.message);
     orders = [];
   }
 }
 
 async function loadSuspendedOrders() {
   try {
-    let { data, error } = await sb.from('suspended_orders').select('*').order('iso_date', { ascending: false });
+    let { data, error } = await sb.from('suspended_orders').select('*');
     if (error) throw error;
     suspendedOrders = (data || []).map(fromDbOrderRow);
   } catch (e) {
-    alert("تعذر تحميل الأوردرات المعلقة من قاعدة البيانات: " + e.message);
+    console.error("خطأ تحميل المعلقة: ", e.message);
     suspendedOrders = [];
   }
 }
@@ -534,7 +532,6 @@ async function loadAllData() {
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
-    // امسح أي بقايا قديمة في التصفح نهائياً تماماً بناءً على طلبك
     sessionStorage.clear();
     localStorage.clear();
 
@@ -647,7 +644,6 @@ async function deleteUser(index) {
   }
 }
 
-/* ترقيمنه ليبدأ من 101 و الشباك من 1 بناءً على أحدث سِجل سحابي */
 function getNextId() {
   let maxId = 100;
   orders.forEach(o => {
@@ -666,7 +662,6 @@ function esc(s) {
 }
 
 async function switchTab(tabId) {
-  // إعادة تحديث البيانات سحابياً عند كل تنقل لضمان رؤية أحدث أوردرات زملائك بشكل لحظي
   await loadOrders();
   await loadSuspendedOrders();
 
@@ -801,7 +796,6 @@ function renderReceipt() {
   `;
 }
 
-/* --- Fresh Section Logic --- */
 function addFreshItem() {
   let name = document.getElementById("freshProductName").value.trim();
   let q = Math.max(1, parseInt(document.getElementById("freshQty").value) || 1);
@@ -892,7 +886,6 @@ function collectData() {
     address: document.getElementById("address").value.trim(),
     notes: document.getElementById("notes").value.trim(),
     date: document.getElementById("orderDate").value,
-    isoDate: new Date().toISOString(),
     items: JSON.parse(JSON.stringify(currentItems)),
     cashierCode: currentUser.code,
     cashierName: currentUser.name
@@ -1009,7 +1002,7 @@ async function deleteSuspended(index) {
 }
 
 async function renderHistory() {
-  await loadOrders(); // تحديث فوري للأرشيف من السحاب
+  await loadOrders();
   let q = (document.getElementById("historySearch").value || "").trim().toLowerCase();
   let list = getFilteredList(orders).filter(o => {
       let str = [String(o.id), String(o.windowNum), String(o.customer), String(o.phone), String(o.cashierName)].join(" ").toLowerCase();
@@ -1080,7 +1073,6 @@ async function deleteOrderForever(id, cashierCode) {
 
 let filteredOrdersForReport = [];
 function getOrderISODate(o) {
-  if (o.isoDate) return o.isoDate.split("T")[0];
   try {
     let p = o.date.split(" ")[0].split("/");
     if (p.length === 3) return `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
