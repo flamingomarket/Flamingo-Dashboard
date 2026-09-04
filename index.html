@@ -455,7 +455,6 @@ function toDbOrderRow(o) {
     area: o.area,
     address: o.address,
     notes: o.notes,
-    order_date: o.date,
     items: o.items,
     cashier_name: o.cashierName
   };
@@ -470,9 +469,9 @@ function fromDbOrderRow(r) {
     area: r.area,
     address: r.address,
     notes: r.notes,
-    date: r.order_date,
+    date: r.created_at ? new Date(r.created_at).toLocaleString("en-GB") + " - " + new Date(r.created_at).toLocaleTimeString("ar-EG", {hour:"2-digit",minute:"2-digit"}) : "—",
     items: r.items || [],
-    cashierCode: r.cashier_code || "1",
+    cashierCode: "1",
     cashierName: r.cashier_name || "عمر الزناتي"
   };
 }
