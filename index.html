@@ -449,7 +449,6 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 function toDbOrderRow(o) {
   return {
     id: Number(o.id),
-    cashier_code: o.cashierCode,
     window_num: Number(o.windowNum) || null,
     customer: o.customer,
     phone: o.phone,
@@ -473,8 +472,8 @@ function fromDbOrderRow(r) {
     notes: r.notes,
     date: r.order_date,
     items: r.items || [],
-    cashierCode: r.cashier_code,
-    cashierName: r.cashier_name
+    cashierCode: r.cashier_code || "1",
+    cashierName: r.cashier_name || "عمر الزناتي"
   };
 }
 
@@ -950,7 +949,7 @@ async function suspendOrder() {
 
 function getFilteredList(rawList) {
   if(currentUser.role === 'manager') return rawList;
-  return rawList.filter(x => x.cashierCode === currentUser.code);
+  return rawList.filter(x => x.cashierName === currentUser.name);
 }
 
 function renderSuspended() {
@@ -1019,13 +1018,13 @@ async function renderHistory() {
       <td>${esc(o.phone)}</td>
       <td>${o.items.reduce((a, x) => a + x.qty, 0)}</td>
       <td><b>${esc(o.cashierName)}</b></td>
-      <td><button class="primary" onclick="loadOrderToPrint('${o.id}', '${o.cashierCode}')">طباعة</button></td>
+      <td><button class="primary" onclick="loadOrderToPrint('${o.id}', '${o.cashierName}')">طباعة</button></td>
     </tr>`;
   }).join("");
 }
 
-function loadOrderToPrint(id, cashierCode) {
-  let o = orders.find(x => x.id == id && x.cashierCode == cashierCode);
+function loadOrderToPrint(id, cashierName) {
+  let o = orders.find(x => x.id == id && x.cashierName == cashierName);
   if(!o) return;
   document.getElementById("orderId").value = o.id;
   document.getElementById("windowNum").value = o.windowNum || 1;
@@ -1053,17 +1052,17 @@ async function renderCancelList() {
       <td>${esc(o.windowNum)}</td>
       <td>${esc(o.customer)}</td>
       <td>${esc(o.phone)}</td>
-      <td><button class="danger" onclick="deleteOrderForever('${o.id}', '${o.cashierCode}')">حذف ❌</button></td>
+      <td><button class="danger" onclick="deleteOrderForever('${o.id}', '${o.cashierName}')">حذف ❌</button></td>
     </tr>
   `).join("");
 }
 
-async function deleteOrderForever(id, cashierCode) {
+async function deleteOrderForever(id, cashierName) {
   if(confirm("حذف نهائي؟")) {
     try {
-      let { error } = await sb.from('orders').delete().eq('id', id).eq('cashier_code', cashierCode);
+      let { error } = await sb.from('orders').delete().eq('id', id).eq('cashier_name', cashierName);
       if (error) throw error;
-      orders = orders.filter(x => !(x.id == id && x.cashierCode == cashierCode)); 
+      orders = orders.filter(x => !(x.id == id && x.cashierName == cashierName)); 
       renderCancelList();
     } catch (e) {
       alert("حصل خطأ أثناء الحذف: " + e.message);
