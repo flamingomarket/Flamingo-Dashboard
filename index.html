@@ -17,7 +17,6 @@
 *{box-sizing:border-box}
 body{margin:0;font-family:'Cairo', Tahoma, Arial, sans-serif;background:var(--light-bg);color:var(--dark-text); min-height: 100vh; display: flex; flex-direction: column;}
 
-/* --- Login Screen Styles --- */
 #login-screen {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
   background: var(--navy); display: flex; justify-content: center; align-items: center;
@@ -34,7 +33,6 @@ body{margin:0;font-family:'Cairo', Tahoma, Arial, sans-serif;background:var(--li
 .login-box button { width: 100%; padding: 14px; font-size: 16px; margin-top: 15px; border-radius: 8px; }
 .login-error { color: #e74c3c; font-size: 14px; margin-bottom: 15px; display: none; font-weight: bold; background: #fadbd8; padding: 10px; border-radius: 6px;}
 
-/* --- Main App Layout --- */
 .app{display:none; min-height:100vh; flex: 1;}
 .side{width:240px;background:var(--navy);color:#fff;padding:20px 15px;position:fixed;right:0;top:0;bottom:0;z-index:100;overflow-y:auto; box-shadow: -2px 0 10px rgba(0,0,0,0.1); display: flex; flex-direction: column; justify-content: space-between;}
 .logo{text-align:center;padding-bottom:15px;border-bottom:1px solid rgba(255,255,255,0.1);margin-bottom:15px;}
@@ -187,7 +185,6 @@ button:active{transform: translateY(0);}
 </head>
 <body>
 
-<!-- Login Screen -->
 <div id="login-screen">
   <div class="login-box">
     <div style="text-align:center; margin-bottom:15px;">
@@ -216,7 +213,6 @@ button:active{transform: translateY(0);}
   </div>
 </div>
 
-<!-- Change Password Modal -->
 <div id="pwdModal" class="modal-overlay">
   <div class="modal-content">
     <h3 style="margin-top:0; color:var(--navy); font-weight: 700;">تغيير كلمة المرور</h3>
@@ -231,7 +227,6 @@ button:active{transform: translateY(0);}
   </div>
 </div>
 
-<!-- Main Application -->
 <div class="app" id="main-app">
   <aside class="side no-print">
     <div>
@@ -250,6 +245,7 @@ button:active{transform: translateY(0);}
         <button id="btn-tab-suspended" onclick="switchTab('tab-suspended')"><span>⏳ أوردرات مؤجلة</span></button>
         <button id="btn-tab-search" onclick="switchTab('tab-search')"><span>⌕ البحث والأرشيف</span></button>
         <button id="btn-tab-cancel" onclick="switchTab('tab-cancel')"><span>❌ إلغاء الأوردرات</span></button>
+        <button id="btn-tab-returns" onclick="switchTab('tab-returns')"><span>↩️ المرتجعات</span></button>
         <button id="btn-tab-reports" onclick="switchTab('tab-reports')"><span>📊 التقارير والإكسيل</span></button>
         <button id="btn-tab-users" class="manager-only" onclick="switchTab('tab-users')"><span>👨‍💼 إدارة الموظفين</span></button>
         <button style="color:var(--pink)" onclick="document.getElementById('pwdModal').style.display='flex'"><span>🔑 تغيير الباسورد</span></button>
@@ -262,7 +258,6 @@ button:active{transform: translateY(0);}
   </aside>
 
   <main class="main">
-    <!-- 1. شاشة أوردر جديد -->
     <div id="tab-new" class="tab-content" style="display:block">
       <div class="top no-print">
         <h1>إنشاء أوردر جديد</h1>
@@ -321,7 +316,6 @@ button:active{transform: translateY(0);}
       </div>
     </div>
 
-    <!-- 2. شاشة قسم الفريشات -->
     <div id="tab-fresh" class="tab-content no-print">
       <div class="top">
         <h1>قسم الفريشات وتجهيز الأقسام (تكت الشيف)</h1>
@@ -367,7 +361,6 @@ button:active{transform: translateY(0);}
       </div>
     </div>
 
-    <!-- باقي التبويبات -->
     <div id="tab-suspended" class="tab-content no-print">
       <div class="top"><h1>الأوردرات المعلقة</h1></div>
       <div class="card">
@@ -396,6 +389,17 @@ button:active{transform: translateY(0);}
         <table class="datatable">
           <thead><tr><th>رقم الأوردر</th><th>الوقت</th><th>الشباك</th><th>العميل</th><th>الموبايل</th><th>حذف</th></tr></thead>
           <tbody id="cancelBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="tab-returns" class="tab-content no-print">
+      <div class="top"><h1>المرتجعات (الأوردرات المحذوفة)</h1></div>
+      <div class="card">
+        <input id="returnsSearch" class="search" placeholder="ابحث في المرتجعات..." oninput="renderReturnsList()">
+        <table class="datatable">
+          <thead><tr><th>رقم الأوردر الأصلي</th><th>وقت الحذف</th><th>الشباك</th><th>العميل</th><th>الموبايل</th><th>الكاشير</th><th>حذف نهائي</th></tr></thead>
+          <tbody id="returnsBody"></tbody>
         </table>
       </div>
     </div>
@@ -439,9 +443,6 @@ button:active{transform: translateY(0);}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-/* ============================================================
-   إعدادات الاتصال المباشر بـ Supabase
-   ============================================================ */
 const SUPABASE_URL = 'https://bmvhnhaeqllpofcpxjcj.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_B1GNr7YbqXRj5JF2acFUBw_IBzpbdNE';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -469,7 +470,7 @@ function fromDbOrderRow(r) {
     area: r.area,
     address: r.address,
     notes: r.notes,
-    date: r.created_at ? new Date(r.created_at).toLocaleString("en-GB") + " - " + new Date(r.created_at).toLocaleTimeString("ar-EG", {hour:"2-digit",minute:"2-digit"}) : "—",
+    date: r.created_at ? new Date(r.created_at).toLocaleDateString("en-GB") + " - " + new Date(r.created_at).toLocaleTimeString("ar-EG", {hour:"2-digit",minute:"2-digit"}) : "—",
     items: r.items || [],
     cashierCode: "1",
     cashierName: r.cashier_name || "عمر الزناتي"
@@ -488,6 +489,7 @@ let currentUser = null;
 
 let orders = [];
 let suspendedOrders = [];
+let returnedOrders = [];
 let currentItems = [];
 let freshItems = [];
 let editingSuspendedId = null;
@@ -525,18 +527,61 @@ async function loadSuspendedOrders() {
   }
 }
 
+async function loadReturnedOrders() {
+  try {
+    let { data, error } = await sb.from('returned_orders').select('*').order('returned_at', { ascending: false });
+    if (error) throw error;
+    returnedOrders = (data || []).map(r => ({
+      id: r.original_id,
+      windowNum: r.window_num,
+      customer: r.customer,
+      phone: r.phone,
+      area: r.area,
+      address: r.address,
+      notes: r.notes,
+      items: r.items || [],
+      cashierName: r.cashier_name,
+      returnedAt: r.returned_at ? new Date(r.returned_at).toLocaleDateString("en-GB") + " - " + new Date(r.returned_at).toLocaleTimeString("ar-EG", {hour:"2-digit",minute:"2-digit"}) : "—",
+      returnId: r.return_id
+    }));
+  } catch (e) {
+    console.error("خطأ تحميل المرتجعات: ", e.message);
+    returnedOrders = [];
+  }
+}
+
 async function loadAllData() {
-  await Promise.all([loadUsers(), loadOrders(), loadSuspendedOrders()]);
+  await Promise.all([loadUsers(), loadOrders(), loadSuspendedOrders(), loadReturnedOrders()]);
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
-    sessionStorage.clear();
-    localStorage.clear();
-
     await loadAllData();
     let loading = document.getElementById("loginLoading");
     let formWrap = document.getElementById("loginFormWrap");
     if (loading) loading.style.display = 'none';
+
+    let savedUserJson = sessionStorage.getItem("oms_current_user_v32");
+    if (savedUserJson) {
+        try {
+            let savedUser = JSON.parse(savedUserJson);
+            let freshUser = users.find(u => u.code === savedUser.code);
+            if (freshUser) {
+                currentUser = freshUser;
+                document.getElementById("login-screen").style.display = 'none';
+                document.getElementById("main-app").style.display = 'flex';
+                document.getElementById("displayUserName").textContent = currentUser.name;
+                document.getElementById("displayUserRole").textContent = currentUser.role === 'manager' ? "(مدير النظام)" : "(كاشير)";
+                let managerElements = document.querySelectorAll(".manager-only");
+                managerElements.forEach(el => el.style.display = (currentUser.role === 'manager') ? 'block' : 'none');
+
+                initNewOrderFields();
+                renderFreshReceipt();
+                let lastTab = sessionStorage.getItem("oms_last_tab_v32") || 'tab-new';
+                switchTab(lastTab);
+                return;
+            }
+        } catch(e) {}
+    }
     if (formWrap) formWrap.style.display = 'block';
 });
 
@@ -548,6 +593,7 @@ function attemptLogin() {
   let user = users.find(u => u.code === code && u.password === pwd);
   if(user) {
     currentUser = user;
+    sessionStorage.setItem("oms_current_user_v32", JSON.stringify(user));
     
     errorMsg.style.display = 'none';
     document.getElementById("login-screen").style.display = 'none';
@@ -571,8 +617,8 @@ function attemptLogin() {
 
 function logout() {
   currentUser = null;
-  sessionStorage.clear();
-  localStorage.clear();
+  sessionStorage.removeItem("oms_current_user_v32");
+  sessionStorage.removeItem("oms_last_tab_v32");
   document.getElementById("main-app").style.display = 'none';
   document.getElementById("login-screen").style.display = 'flex';
 }
@@ -662,6 +708,8 @@ function esc(s) {
 async function switchTab(tabId) {
   await loadOrders();
   await loadSuspendedOrders();
+  if (tabId === 'tab-returns') await loadReturnedOrders();
+  sessionStorage.setItem("oms_last_tab_v32", tabId);
 
   document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
   document.querySelectorAll('.nav button').forEach(el => el.classList.remove('active'));
@@ -674,15 +722,21 @@ async function switchTab(tabId) {
   if(tabId === 'tab-suspended') renderSuspended();
   if(tabId === 'tab-search') renderHistory();
   if(tabId === 'tab-cancel') renderCancelList();
+  if(tabId === 'tab-returns') renderReturnsList();
   if(tabId === 'tab-reports') updateStats();
   if(tabId === 'tab-users') renderUsersList();
 }
 
-function initNewOrderFields() {
+function computeAndSetOrderNumber() {
     let nextNum = getNextId();
     document.getElementById("orderId").value = nextNum;
     let windowCalc = ((nextNum - 101) % 10) + 1; 
     document.getElementById("windowNum").value = windowCalc;
+    return nextNum;
+}
+
+function initNewOrderFields() {
+    computeAndSetOrderNumber();
     document.getElementById("orderDate").value = now();
     renderReceipt();
 }
@@ -896,21 +950,34 @@ async function performSave() {
       return false; 
   }
 
-  let o = collectData();
-  try {
-    let { error } = await sb.from('orders').insert(toDbOrderRow(o));
-    if (error) throw error;
-    if(editingSuspendedId) {
-      await sb.from('suspended_orders').delete().eq('id', editingSuspendedId);
-      suspendedOrders = suspendedOrders.filter(x => x.id !== editingSuspendedId);
-      editingSuspendedId = null;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    let o = collectData();
+    try {
+      let { error } = await sb.from('orders').insert(toDbOrderRow(o));
+      if (error) {
+        if (error.code === '23505') {
+          // رقم الأوردر ده اتاخد من كاشير تاني في نفس اللحظة - ناخد رقم جديد ونعيد المحاولة
+          await loadOrders();
+          computeAndSetOrderNumber();
+          renderReceipt();
+          continue;
+        }
+        throw error;
+      }
+      if(editingSuspendedId) {
+        await sb.from('suspended_orders').delete().eq('id', editingSuspendedId);
+        suspendedOrders = suspendedOrders.filter(x => x.id !== editingSuspendedId);
+        editingSuspendedId = null;
+      }
+      orders.unshift(o);
+      return true;
+    } catch (e) {
+      alert("حصل خطأ أثناء حفظ الأوردر على قاعدة البيانات: " + e.message);
+      return false;
     }
-    orders.unshift(o);
-    return true;
-  } catch (e) {
-    alert("حصل خطأ أثناء حفظ الأوردر على قاعدة البيانات: " + e.message);
-    return false;
   }
+  alert("تعذر إيجاد رقم أوردر متاح بعد عدة محاولات، حاول مرة أخرى.");
+  return false;
 }
 
 async function saveOrderAction() {
@@ -929,21 +996,34 @@ async function saveAndPrintAction() {
 
 async function suspendOrder() {
   if(!document.getElementById("customer").value.trim() && !document.getElementById("phone").value.trim() && currentItems.length === 0) { alert("لا يوجد بيانات!"); return; }
-  let o = collectData();
-  try {
-    if(editingSuspendedId) {
-      await sb.from('suspended_orders').delete().eq('id', editingSuspendedId);
-      suspendedOrders = suspendedOrders.filter(x => x.id !== editingSuspendedId);
+  
+  for (let attempt = 0; attempt < 5; attempt++) {
+    let o = collectData();
+    try {
+      if(editingSuspendedId) {
+        await sb.from('suspended_orders').delete().eq('id', editingSuspendedId);
+        suspendedOrders = suspendedOrders.filter(x => x.id !== editingSuspendedId);
+      }
+      let { error } = await sb.from('suspended_orders').insert(toDbOrderRow(o));
+      if (error) {
+        if (error.code === '23505') {
+          await loadSuspendedOrders();
+          computeAndSetOrderNumber();
+          renderReceipt();
+          continue;
+        }
+        throw error;
+      }
+      suspendedOrders.unshift(o);
+      alert("تم تعليق الأوردر بنجاح!");
+      clearOrder();
+      return;
+    } catch (e) {
+      alert("حصل خطأ أثناء تعليق الأوردر: " + e.message);
+      return;
     }
-    let { error } = await sb.from('suspended_orders').insert(toDbOrderRow(o));
-    if (error) throw error;
-    suspendedOrders.unshift(o);
-  } catch (e) {
-    alert("حصل خطأ أثناء تعليق الأوردر: " + e.message);
-    return;
   }
-  alert("تم تعليق الأوردر بنجاح!");
-  clearOrder(); 
+  alert("تعذر إيجاد رقم أوردر متاح بعد عدة محاولات، حاول مرة أخرى.");
 }
 
 function getFilteredList(rawList) {
@@ -1057,12 +1137,61 @@ async function renderCancelList() {
 }
 
 async function deleteOrderForever(id, cashierName) {
-  if(confirm("حذف نهائي؟")) {
+  if(confirm("حذف هذا الأوردر ونقله لأرشيف المرتجعات؟")) {
+    let o = orders.find(x => x.id == id && x.cashierName == cashierName);
+    if (!o) return;
     try {
+      let { error: insErr } = await sb.from('returned_orders').insert({
+        original_id: o.id,
+        window_num: o.windowNum,
+        customer: o.customer,
+        phone: o.phone,
+        area: o.area,
+        address: o.address,
+        notes: o.notes,
+        items: o.items,
+        cashier_name: o.cashierName
+      });
+      if (insErr) throw insErr;
+
       let { error } = await sb.from('orders').delete().eq('id', id).eq('cashier_name', cashierName);
       if (error) throw error;
       orders = orders.filter(x => !(x.id == id && x.cashierName == cashierName)); 
       renderCancelList();
+    } catch (e) {
+      alert("حصل خطأ أثناء نقل الأوردر للأرشيف: " + e.message);
+    }
+  }
+}
+
+function renderReturnsList() {
+  let q = (document.getElementById("returnsSearch").value || "").trim().toLowerCase();
+  let list = getFilteredList(returnedOrders).filter(o => {
+      let str = [String(o.id), String(o.customer), String(o.cashierName)].join(" ").toLowerCase();
+      return !q || str.includes(q);
+  });
+  let b = document.getElementById("returnsBody");
+  if(list.length === 0) { b.innerHTML = `<tr><td colspan="7">لا توجد مرتجعات.</td></tr>`; return; }
+  b.innerHTML = list.slice(0, 50).map(o => `
+    <tr>
+      <td><b>${esc(o.id)}</b></td>
+      <td>${esc(o.returnedAt)}</td>
+      <td>${esc(o.windowNum)}</td>
+      <td>${esc(o.customer)}</td>
+      <td>${esc(o.phone)}</td>
+      <td><b>${esc(o.cashierName)}</b></td>
+      <td><button class="danger" onclick="deleteReturnedForever(${o.returnId})">حذف نهائي ❌</button></td>
+    </tr>
+  `).join("");
+}
+
+async function deleteReturnedForever(returnId) {
+  if(confirm("حذف نهائي من الأرشيف؟ لن يمكن استرجاعه بعد ذلك.")) {
+    try {
+      let { error } = await sb.from('returned_orders').delete().eq('return_id', returnId);
+      if (error) throw error;
+      returnedOrders = returnedOrders.filter(x => x.returnId !== returnId);
+      renderReturnsList();
     } catch (e) {
       alert("حصل خطأ أثناء الحذف: " + e.message);
     }
@@ -1101,10 +1230,7 @@ function updateStatsUI() {
 }
 
 async function updateStats() {
-  if (!document.getElementById("dateFrom").value) {
-     let today = new Date().toISOString().split("T")[0];
-     document.getElementById("dateFrom").value = today; document.getElementById("dateTo").value = today;
-  }
+  // نعرض كل البيانات افتراضيًا أول ما نفتح التبويب، والمستخدم يقدر يحدد نطاق تاريخ بنفسه بعدين
   await filterReports();
 }
 
